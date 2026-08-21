@@ -1,0 +1,179 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "mysql"
+  url      = env("DATABASE_URL")
+}
+
+enum Role {
+  ADMIN
+  PROMOTOR
+  ASISTENTE
+}
+
+enum RewardStatus {
+  PENDING
+  DELIVERED
+}
+
+enum EarningType {
+  COMMISSION
+  BONUS_MOST_VOTED
+  OTHER
+}
+
+enum FinanceType {
+  INCOME
+  EXPENSE
+}
+
+enum PaymentStatus {
+  PENDING
+  PAID
+}
+
+model User {
+  id               Int       @id @default(autoincrement())
+  firstName        String    @map("first_name") @db.VarChar(100)
+  lastName         String    @map("last_name") @db.VarChar(100)
+  email            String?   @unique @db.VarChar(150)
+  passwordHash     String    @map("password_hash") @db.VarChar(255)
+  role             Role      @default(ASISTENTE)
+  points           Int       @default(0)
+  isActive         Boolean   @default(true) @map("is_active")
+  isQrActive       Boolean   @default(true) @map("is_qr_active")
+  createdAt        DateTime  @default(now()) @map("created_at")
+
+  // Relaciones
+  attendancesAsAttendee  Attendance[] @relation("AttendeeRelation")
+  attendancesAsPromoter  Attendance[] @relation("PromoterRelation")
+  rewardRedemptions      RewardRedemption[]
+  earnings               PromoterEarning[]
+  giveawaysRigged        Giveaway[]        @relation("RiggedWinner")
+  giveawaysWon           Giveaway[]        @relation("ActualWinner")
+
+  @@map("users")
+}
+
+model Event {
+  id             Int       @id @default(autoincrement())
+  title          String    @db.VarChar(150)
+  description    String?   @db.Text
+  eventDate      DateTime  @map("event_date") @db.Date
+  eventTime      DateTime  @map("event_time") @db.Time
+  location       String    @db.VarChar(255)
+  entryCost      Decimal   @map("entry_cost") @db.Decimal(10, 2)
+  pointsReward   Int       @default(0) @map("points_reward")
+  flyerImageUrl  String?   @map("flyer_image_url") @db.VarChar(255)
+  isActive       Boolean   @default(true) @map("is_active")
+  createdAt      DateTime  @default(now()) @map("created_at")
+
+  // Relaciones
+  attendances    Attendance[]
+  earnings       PromoterEarning[]
+  finances       Finance[]
+
+  @@map("events")
+}
+
+model Attendance {
+  id                Int       @id @default(autoincrement())
+  eventId           Int       @map("event_id")
+  promoterId        Int       @map("promoter_id")
+  attendeeId        Int?      @map("attendee_id")
+  guestName         String?   @map("guest_name") @db.VarChar(100)
+  deviceFingerprint String?   @map("device_fingerprint") @db.VarChar(255)
+  createdAt         DateTime  @default(now()) @map("created_at")
+
+  event             Event     @relation(fields: [eventId], references: [id], onDelete: Cascade)
+  promoter          User      @relation("PromoterRelation", fields: [promoterId], references: [id], onDelete: Cascade)
+  attendee          User?     @relation("AttendeeRelation", fields: [attendeeId], references: [id], onDelete: SetNull)
+
+  @@map("attendances")
+}
+
+model Reward {
+  id             Int       @id @default(autoincrement())
+  name           String    @db.VarChar(150)
+  description    String?   @db.Text
+  pointsCost     Int       @map("points_cost")
+  imageUrl       String?   @map("image_url") @db.VarChar(255)
+  isActive       Boolean   @default(true) @map("is_active")
+  createdAt      DateTime  @default(now()) @map("created_at")
+
+  redemptions    RewardRedemption[]
+
+  @@map("rewards")
+}
+
+model RewardRedemption {
+  id             Int          @id @default(autoincrement())
+  rewardId       Int          @map("reward_id")
+  attendeeId     Int          @map("attendee_id")
+  status         RewardStatus @default(PENDING)
+  redeemedAt     DateTime     @default(now()) @map("redeemed_at")
+
+  reward         Reward       @relation(fields: [rewardId], references: [id], onDelete: Cascade)
+  attendee       User         @relation(fields: [attendeeId], references: [id], onDelete: Cascade)
+
+  @@map("reward_redemptions")
+}
+
+model PromoterEarning {
+  id             Int           @id @default(autoincrement())
+  promoterId     Int           @map("promoter_id")
+  eventId        Int?          @map("event_id")
+  amount         Decimal       @db.Decimal(10, 2)
+  type           EarningType
+  status         PaymentStatus @default(PENDING)
+  createdAt      DateTime      @default(now()) @map("created_at")
+
+  promoter       User          @relation(fields: [promoterId], references: [id], onDelete: Cascade)
+  event          Event?        @relation(fields: [eventId], references: [id], onDelete: SetNull)
+
+  @@map("promoter_earnings")
+}
+
+model Finance {
+  id               Int           @id @default(autoincrement())
+  eventId          Int?          @map("event_id")
+  type             FinanceType
+  category         String        @db.VarChar(100)
+  amount           Decimal       @db.Decimal(10, 2)
+  description      String?       @db.Text
+  status           PaymentStatus @default(PAID)
+  transactionDate  DateTime      @map("transaction_date") @db.Date
+  createdAt        DateTime      @default(now()) @map("created_at")
+
+  event            Event?        @relation(fields: [eventId], references: [id], onDelete: SetNull)
+
+  @@map("finances")
+}
+
+model FinanceCategory {
+  id        Int      @id @default(autoincrement())
+  name      String   @unique @db.VarChar(100)
+  type      FinanceType
+  createdAt DateTime @default(now()) @map("created_at")
+
+  @@map("finance_categories")
+}
+
+model Giveaway {
+  id              Int       @id @default(autoincrement())
+  title           String    @db.VarChar(150)
+  targetAudience  String    @map("target_audience") @db.VarChar(50) // 'ATTENDEES' | 'PROMOTERS'
+  mode            String    @db.VarChar(50) // 'LIMPIO' | 'SUCIO'
+  riggedWinnerId  Int?      @map("rigged_winner_id")
+  actualWinnerId  Int?      @map("actual_winner_id")
+  isActive        Boolean   @default(true) @map("is_active")
+  isCompleted     Boolean   @default(false) @map("is_completed")
+  createdAt       DateTime  @default(now()) @map("created_at")
+
+  riggedWinner    User?     @relation("RiggedWinner", fields: [riggedWinnerId], references: [id])
+  actualWinner    User?     @relation("ActualWinner", fields: [actualWinnerId], references: [id])
+
+  @@map("giveaways")
+}
