@@ -49,7 +49,10 @@ export default async function CategoriesPage() {
         </div>
 
         {/* Añadir */}
-        <form action={addFinanceCategory} className="bg-transparent border border-neutral-800 shadow-[0_0_30px_rgba(0,0,0,0.5)] p-6 space-y-6">
+        <form action={async (formData) => {
+          'use server';
+          await addFinanceCategory(formData);
+        }} className="bg-transparent border border-neutral-800 shadow-[0_0_30px_rgba(0,0,0,0.5)] p-6 space-y-6">
           <h2 className="text-lg font-serif uppercase tracking-widest text-white border-b border-neutral-800 pb-4">Nueva Categoría</h2>
           
           <div className="space-y-2">

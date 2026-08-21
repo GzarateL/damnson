@@ -25,7 +25,7 @@ export default async function CheckinPage({ params }: { params: Promise<{ eventI
   let isAlreadyRegistered = false;
   if (isLoggedIn) {
     const existing = await db.attendance.findFirst({
-      where: { eventId, attendeeId: parseInt(session.user.id) }
+      where: { eventId, attendeeId: parseInt(session!.user!.id as string) }
     });
     if (existing) isAlreadyRegistered = true;
   }
