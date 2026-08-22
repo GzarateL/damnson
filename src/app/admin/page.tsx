@@ -1,9 +1,10 @@
 import { db } from '@/lib/db';
 
 export default async function AdminDashboard() {
-  const [totalEvents, totalAttendees, finances] = await Promise.all([
+  const [totalEvents, totalAttendees, totalUsers, finances] = await Promise.all([
     db.event.count({ where: { isActive: true } }),
     db.attendance.count(),
+    db.user.count({ where: { role: 'ASISTENTE' } }),
     db.finance.findMany()
   ]);
 
@@ -35,8 +36,11 @@ export default async function AdminDashboard() {
           <p className="text-3xl font-serif text-accent mt-3 relative z-10">{totalEvents}</p>
         </div>
         <div className="p-6 bg-transparent border border-neutral-800 hover:border-neutral-600 transition-colors shadow-[0_0_30px_rgba(0,0,0,0.5)]">
-          <h3 className="text-neutral-500 text-[10px] uppercase tracking-[0.2em]">Asistentes Totales</h3>
-          <p className="text-3xl font-serif text-white mt-3">{totalAttendees}</p>
+          <h3 className="text-neutral-500 text-[10px] uppercase tracking-[0.2em]">Usuarios Registrados</h3>
+          <div className="mt-3 flex items-end gap-2">
+            <p className="text-3xl font-serif text-white">{totalUsers}</p>
+            <span className="text-neutral-500 text-xs mb-1">({totalAttendees} asistencias)</span>
+          </div>
         </div>
       </div>
 

@@ -4,21 +4,21 @@ const bcrypt = require('bcryptjs');
 const prisma = new PrismaClient();
 
 async function main() {
-  const hash = await bcrypt.hash('admin123', 10);
+  const hash = await bcrypt.hash('EKtQQBWFTEiO', 10);
   
   await prisma.user.upsert({
-    where: { email: 'admin@discoteca.com' },
+    where: { email: 'adhe_24@gmail.com' },
     update: {},
     create: {
-      firstName: 'Super',
-      lastName: 'Admin',
-      email: 'admin@discoteca.com',
+      firstName: 'Admin',
+      lastName: 'Principal',
+      email: 'adhe_24@gmail.com',
       passwordHash: hash,
       role: 'ADMIN'
     }
   });
   
-  console.log('Admin user seeded successfully.');
+  console.log('Usuario administrador personalizado creado con éxito.');
 }
 
 main()
